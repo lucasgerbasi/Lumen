@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumen — Knowledge Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0c0c0f;
+            --surface: #13131a;
+            --surface2: #1a1a24;
+            --border: rgba(255,255,255,0.07);
+            --border2: rgba(255,255,255,0.04);
+            --text: #e8e6e0;
+            --muted: #5a5870;
+            --accent: #c8b89a;
+            --accent-dim: rgba(200,184,154,0.12);
+            --accent-border: rgba(200,184,154,0.2);
+            --user-bg: #1e1c2a;
+            --glow: rgba(200,184,154,0.15);
+            --danger: rgba(220,80,80,0.85);
+            --danger-dim: rgba(220,80,80,0.1);
+            --danger-border: rgba(220,80,80,0.2);
+            --github-color: #8aa0c8;
+            --github-dim: rgba(130,160,200,0.12);
+            --github-border: rgba(130,160,200,0.2);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+        }
+
+        /* ─── SIDEBAR ─── */
+        aside {
+            width: 288px;
+            min-width: 288px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .wordmark {
+            font-family: 'Instrument Serif', serif;
+            font-size: 21px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .wordmark-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--glow);
+            flex-shrink: 0;
+        }
+
+        /* Tab strip */
+        .tab-strip {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 11px 0;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+            letter-spacing: 0.03em;
+            user-select: none;
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab:hover:not(.active) { color: var(--text); }
+
+        /* Tab panels */
+        .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+        .tab-panel.active { display: flex; }
+
+        /* Ingest panel */
+        .ingest-panel {
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 26px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Sources panel */
+        .sources-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sources-toolbar {
+            padding: 14px 24px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .sources-count {
+            font-size: 11.5px;
+            color: var(--muted);
+        }
+
+        .sources-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px 16px;
+        }
+
+        .sources-list::-webkit-scrollbar { width: 3px; }
+        .sources-list::-webkit-scrollbar-track { background: transparent; }
+        .sources-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 4px; }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: background 0.15s;
+            group: true;
+        }
+
+        .source-item:hover { background: rgba(255,255,255,0.03); }
+
+        .source-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .source-icon.pdf {
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            color: var(--accent);
+        }
+
+        .source-icon.github {
+            background: var(--github-dim);
+            border: 1px solid var(--github-border);
+            color: var(--github-color);
+        }
+
+        .source-info { flex: 1; min-width: 0; }
+
+        .source-name {
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .source-meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .delete-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s, background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .source-item:hover .delete-btn { opacity: 1; }
+        .delete-btn:hover { background: var(--danger-dim); color: var(--danger); }
+
+        .empty-sources {
+            padding: 36px 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .empty-sources-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+            opacity: 0.4;
+            font-family: 'Instrument Serif', serif;
+        }
+
+        /* Clear all button */
+        .clear-all-row {
+            padding: 10px 24px 14px;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-clear-all {
+            width: 100%;
+            padding: 9px;
+            border-radius: 8px;
+            background: var(--danger-dim);
+            border: 1px solid var(--danger-border);
+            color: var(--danger);
+            font-size: 12.5px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .btn-clear-all:hover { background: rgba(220,80,80,0.18); }
+        .btn-clear-all:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ─── SECTION LABEL ─── */
+        .section-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        /* ─── UPLOAD ZONE ─── */
+        .upload-zone {
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            width: 28px; height: 28px;
+            margin: 0 auto 8px;
+            color: var(--muted);
+            transition: color 0.2s;
+        }
+
+        .upload-zone:hover .upload-icon { color: var(--accent); }
+
+        .upload-label {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .upload-label strong {
+            display: block;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 12.5px;
+            margin-bottom: 2px;
+        }
+
+        #pdf-filename {
+            font-size: 11px;
+            color: var(--accent);
+            margin-top: 7px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: none;
+        }
+
+        /* ─── INPUTS ─── */
+        .input-row { display: flex; flex-direction: column; gap: 8px; }
+
+        .text-input {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 13px;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .text-input::placeholder { color: var(--muted); }
+        .text-input:focus { border-color: rgba(200,184,154,0.4); background: rgba(255,255,255,0.06); }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-pdf {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent-border);
+            width: 100%;
+        }
+        .btn-pdf:hover:not(:disabled) { background: rgba(200,184,154,0.2); }
+
+        .btn-github {
+            background: var(--github-dim);
+            color: var(--github-color);
+            border: 1px solid var(--github-border);
+            width: 100%;
+        }
+        .btn-github:hover:not(:disabled) { background: rgba(130,160,200,0.2); }
+
+        .btn-icon {
+            padding: 0;
+            width: 26px; height: 26px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .btn-icon:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+
+        /* ─── CONFIRM DIALOG ─── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .overlay.show { opacity: 1; pointer-events: all; }
+
+        .dialog {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 28px 22px;
+            max-width: 340px;
+            width: 90%;
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .overlay.show .dialog { transform: scale(1) translateY(0); }
+
+        .dialog-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .dialog-body {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.65;
+            margin-bottom: 22px;
+        }
+
+        .dialog-body strong { color: var(--text); }
+
+        .dialog-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-cancel:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+
+        .btn-confirm-delete {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--danger-border);
+            background: var(--danger-dim);
+            color: var(--danger);
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-confirm-delete:hover { background: rgba(220,80,80,0.2); }
+
+        /* ─── TOAST ─── */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 10px 20px;
+            font-size: 13px;
+            color: var(--text);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+            z-index: 999;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #toast.error { border-color: rgba(200,80,80,0.4); color: #e08080; }
+        #toast.success { border-color: rgba(100,180,120,0.4); color: #80c8a0; }
+
+        .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+        /* ─── MAIN CHAT ─── */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        main::before {
+            content: '';
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(200,184,154,0.04) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 0;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-box::-webkit-scrollbar { width: 4px; }
+        #chat-box::-webkit-scrollbar-track { background: transparent; }
+        #chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        /* ─── EMPTY STATE ─── */
+        #empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 14px;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .empty-glyph {
+            font-family: 'Instrument Serif', serif;
+            font-size: 56px;
+            line-height: 1;
+            color: rgba(200,184,154,0.18);
+        }
+
+        .empty-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 21px;
+            color: rgba(232,230,224,0.45);
+        }
+
+        .empty-sub {
+            font-size: 13px;
+            color: var(--muted);
+            max-width: 300px;
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        /* ─── MESSAGES ─── */
+        .message-row {
+            padding: 0 40px;
+            max-width: 820px;
+            width: 100%;
+            margin: 0 auto;
+            animation: fadeUp 0.3s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-user {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 18px;
+        }
+
+        .msg-user .bubble {
+            background: var(--user-bg);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 18px 18px 4px 18px;
+            padding: 12px 17px;
+            max-width: 70%;
+            font-size: 14.5px;
+            line-height: 1.65;
+            color: var(--text);
+        }
+
+        .msg-ai {
+            display: flex;
+            gap: 13px;
+            align-items: flex-start;
+            margin-bottom: 26px;
+        }
+
+        .ai-avatar {
+            width: 28px; height: 28px; min-width: 28px;
+            border-radius: 50%;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .ai-avatar-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--glow);
+        }
+
+        .msg-ai .bubble {
+            font-size: 15px;
+            line-height: 1.8;
+            color: rgba(232,230,224,0.88);
+            max-width: calc(100% - 41px);
+            white-space: pre-wrap;
+            font-family: 'Instrument Serif', serif;
+            letter-spacing: 0.01em;
+        }
+
+        .typing-cursor::after {
+            content: '';
+            display: inline-block;
+            width: 2px;
+            height: 15px;
+            background: var(--accent);
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: cursorBlink 0.9s step-start infinite;
+            border-radius: 1px;
+        }
+
+        @keyframes cursorBlink { 50% { opacity: 0; } }
+
+        .loading-dots { display: flex; gap: 5px; padding: 6px 0; align-items: center; }
+        .loading-dots span {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: dotPulse 1.2s ease infinite;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50%       { opacity: 1;   transform: scale(1); }
+        }
+
+        /* ─── INPUT BAR ─── */
+        .input-bar { padding: 18px 40px 26px; }
+
+        .input-wrap {
+            max-width: 820px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        #question-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 15px 52px 15px 18px;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: none;
+            line-height: 1.5;
+            min-height: 54px;
+            overflow-y: hidden;
+        }
+
+        #question-input::placeholder { color: var(--muted); }
+        #question-input:focus {
+            border-color: rgba(200,184,154,0.3);
+            box-shadow: 0 0 0 3px rgba(200,184,154,0.06);
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 9px;
+            bottom: 9px;
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            color: #0c0c0f;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover { background: #d9cbb0; transform: scale(1.05); }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+        .send-btn svg { width: 15px; height: 15px; }
+
+        .input-hint {
+            text-align: center;
+            font-size: 11px;
+            color: rgba(90,88,112,0.6);
+            margin-top: 8px;
+        }
+
+        /* ─── SPINNER ─── */
+        .spin {
+            display: inline-block;
+            width: 13px; height: 13px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── DIVIDER ─── */
+        .sidebar-divider { height: 1px; background: var(--border); margin: 4px 0; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside>
+        <div class="sidebar-header">
+            <div class="wordmark">
+                <div class="wordmark-dot"></div>
+                Lumen
+            </div>
+        </div>
+
+        <div class="tab-strip">
+            <div class="tab active" onclick="switchTab('ingest')">Ingest</div>
+            <div class="tab" onclick="switchTab('sources')" id="sources-tab">Sources</div>
+        </div>
+
+        <!-- INGEST PANEL -->
+        <div class="tab-panel active" id="panel-ingest">
+            <div class="ingest-panel">
+                <!-- PDF -->
+                <div>
+                    <div class="section-label">PDF Document</div>
+                    <div class="upload-zone" id="upload-zone">
+                        <input type="file" id="pdf-upload" accept=".pdf">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                        <div class="upload-label">
+                            <strong>Drop PDF here</strong>
+                            or click to browse
+                        </div>
+                        <div id="pdf-filename"></div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-pdf" id="pdf-btn" onclick="ingestPdf()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                            Upload & Process
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <!-- GitHub -->
+                <div>
+                    <div class="section-label">GitHub Repository</div>
+                    <div class="input-row">
+                        <input type="text" id="github-url" class="text-input" placeholder="github.com/user/repo"
+                            onkeypress="if(event.key==='Enter') ingestGithub()">
+                        <button class="btn btn-github" id="github-btn" onclick="ingestGithub()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+                            Clone & Index
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOURCES PANEL -->
+        <div class="tab-panel" id="panel-sources">
+            <div class="sources-panel">
+                <div class="sources-toolbar">
+                    <span class="sources-count" id="sources-count">Loading…</span>
+                    <button class="btn btn-icon" onclick="loadSources()" title="Refresh">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    </button>
+                </div>
+
+                <div class="sources-list" id="sources-list">
+                    <div class="empty-sources">
+                        <div class="empty-sources-icon">◎</div>
+                        No sources yet.<br>Ingest a PDF or repo first.
+                    </div>
+                </div>
+
+                <div class="clear-all-row" id="clear-all-row" style="display:none;">
+                    <button class="btn-clear-all" onclick="confirmClearAll()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        Clear all sources
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main>
+        <div id="chat-box">
+            <div id="empty-state">
+                <div class="empty-glyph">◎</div>
+                <div class="empty-title">What would you like to know?</div>
+                <div class="empty-sub">Ingest a PDF or GitHub repository, then ask anything about it.</div>
+            </div>
+        </div>
+
+        <div class="input-bar">
+            <div class="input-wrap">
+                <textarea id="question-input" placeholder="Ask something…" rows="1"
+                    onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+                <button class="send-btn" id="send-btn" onclick="askQuestion()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="input-hint">⏎ to send &nbsp;·&nbsp; ⇧⏎ for new line</div>
+        </div>
+    </main>
+
+    <!-- CONFIRM DIALOG -->
+    <div class="overlay" id="confirm-overlay">
+        <div class="dialog">
+            <div class="dialog-title" id="dialog-title">Remove source?</div>
+            <div class="dialog-body" id="dialog-body">This will remove all chunks for this source from the knowledge base.</div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeDialog()">Cancel</button>
+                <button class="btn-confirm-delete" id="dialog-confirm-btn">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"><div class="toast-dot"></div><span id="toast-text"></span></div>
+
+    <script>
+        const API_BASE = "http://localhost:8000";
+        let toastTimer = null;
+        let pendingAction = null;
+
+        // ── Toast ──────────────────────────────────────────────
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const text = document.getElementById('toast-text');
+            clearTimeout(toastTimer);
+            toast.className = '';
+            text.textContent = msg;
+            if (type === 'error') toast.classList.add('error');
+            if (type === 'success') toast.classList.add('success');
+            requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+            if (type !== 'loading') {
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+            }
+        }
+
+        // ── Tabs ───────────────────────────────────────────────
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach((el, i) => {
+                el.classList.toggle('active', (i === 0 && tab === 'ingest') || (i === 1 && tab === 'sources'));
+            });
+            document.getElementById('panel-ingest').classList.toggle('active', tab === 'ingest');
+            document.getElementById('panel-sources').classList.toggle('active', tab === 'sources');
+            if (tab === 'sources') loadSources();
+        }
+
+        // ── Textarea ───────────────────────────────────────────
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askQuestion(); }
+        }
+
+        // ── Upload zone ────────────────────────────────────────
+        const zone = document.getElementById('upload-zone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); });
+
+        document.getElementById('pdf-upload').addEventListener('change', function () {
+            const fn = document.getElementById('pdf-filename');
+            if (this.files.length) { fn.textContent = this.files[0].name; fn.style.display = 'block'; }
+            else { fn.style.display = 'none'; }
+        });
+
+        // ── PDF Ingest ─────────────────────────────────────────
+        async function ingestPdf() {
+            const fileInput = document.getElementById('pdf-upload');
+            const btn = document.getElementById('pdf-btn');
+            if (!fileInput.files.length) { showToast('Select a PDF first', 'error'); return; }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spin"></div> Processing…`;
+            showToast(`Reading ${file.name}…`, 'loading');
+
+            try {
+                const res = await fetch(`${API_BASE}/ingest/pdf`, { method: 'POST', body: formData });
+                if (!res.ok) {
+                    let detail = "Upload failed";
+                    try { const d = await res.json(); detail = d.detail || detail; } catch {}
+                    throw new Error(detail);
+                }
+                const data = await res.json();
+                showToast(`Indexed ${data.chunks} chunks from ${data.file}`, 'success');
+                fileInput.value = "";
+                document.getElementById('pdf-filename').style.display = 'none';
+                refreshSourcesBadge();
+                // Auto-switch to sources tab to show newly indexed content
+                switchTab('sources');
+            } catch (e) {
+                showToast(e.message || 'Network error — is the server running?', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg> Upload & Process`;
+            }
+        }
+
+        // ── GitHub Ingest ──────────────────────────────────────
+        async function ingestGithub() {
+            const urlInput = document.getElementById('github-url');
+            const btn = document.getElementById('github-btn');
+            let url = urlInput.value.trim();
+            if (!url) { showToast('Enter a GitHub URL', 'error'); return; }
+            if (!url.startsWith('http')) url = 'https://' + url;
+
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spin"></div> Cloning…`;
+            showToast('Cloning repository…', 'loading');
+
+            try {
+                const res = await fetch(`${API_BASE}/ingest/github?repo_url=${encodeURIComponent(url)}`, { method: 'POST' });
+                if (!res.ok) {
+                    let detail = "Failed to process repository";
+                    try { const d = await res.json(); detail = d.detail || detail; } catch {}
+                    throw new Error(detail);
+                }
+                const data = await res.json();
+                showToast(`Indexed ${data.chunks} chunks from ${data.repo}`, 'success');
+                urlInput.value = "";
+                refreshSourcesBadge();
+                // Auto-switch to sources tab to show newly indexed content
+                switchTab('sources');
+            } catch (e) {
+                showToast(e.message || 'Network error — is the server running?', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> Clone & Index`;
+            }
+        }
+
+        // ── Sources ────────────────────────────────────────────
+        async function loadSources() {
+            const list = document.getElementById('sources-list');
+            const count = document.getElementById('sources-count');
+            const clearRow = document.getElementById('clear-all-row');
+
+            count.textContent = 'Loading…';
+
+            try {
+                const res = await fetch(`${API_BASE}/sources`);
+                if (!res.ok) throw new Error('Server returned ' + res.status);
+                const data = await res.json();
+                const sources = data.sources || [];
+
+                count.textContent = sources.length === 0 ? 'No sources'
+                    : `${sources.length} source${sources.length > 1 ? 's' : ''}`;
+                clearRow.style.display = sources.length > 0 ? 'block' : 'none';
+                document.getElementById('sources-tab').textContent =
+                    sources.length > 0 ? `Sources (${sources.length})` : 'Sources';
+
+                if (sources.length === 0) {
+                    list.innerHTML = '';
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-sources';
+                    empty.innerHTML = '<div class="empty-sources-icon">◎</div>No sources yet.<br>Ingest a PDF or repo first.';
+                    list.appendChild(empty);
+                    return;
+                }
+
+                // Build DOM nodes — no innerHTML with dynamic data, no CSS.escape
+                list.innerHTML = '';
+                const pdfIcon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>';
+                const ghIcon  = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>';
+                const trashIcon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
+
+                sources.forEach(s => {
+                    const row = document.createElement('div');
+                    row.className = 'source-item';
+
+                    const icon = document.createElement('div');
+                    icon.className = `source-icon ${s.type}`;
+                    icon.innerHTML = s.type === 'pdf' ? pdfIcon : ghIcon;
+
+                    const info = document.createElement('div');
+                    info.className = 'source-info';
+
+                    const name = document.createElement('div');
+                    name.className = 'source-name';
+                    name.title = s.key;
+                    name.textContent = s.key;
+
+                    const meta = document.createElement('div');
+                    meta.className = 'source-meta';
+                    meta.textContent = `${s.chunks} chunk${s.chunks !== 1 ? 's' : ''} · ${s.type === 'pdf' ? 'PDF' : 'GitHub'}`;
+
+                    info.appendChild(name);
+                    info.appendChild(meta);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'delete-btn';
+                    delBtn.title = 'Remove';
+                    delBtn.innerHTML = trashIcon;
+                    delBtn.addEventListener('click', () => confirmDelete(s.key));
+
+                    row.appendChild(icon);
+                    row.appendChild(info);
+                    row.appendChild(delBtn);
+                    list.appendChild(row);
+                });
+
+            } catch(err) {
+                count.textContent = 'Error loading';
+                console.error('loadSources error:', err);
+                list.innerHTML = '';
+                const errDiv = document.createElement('div');
+                errDiv.className = 'empty-sources';
+                errDiv.style.color = '#e08080';
+                errDiv.textContent = 'Could not load sources: ' + (err.message || 'unknown error');
+                list.appendChild(errDiv);
+            }
+        }
+
+        async function refreshSourcesBadge() {
+            try {
+                const res = await fetch(`${API_BASE}/sources`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const n = (data.sources || []).length;
+                document.getElementById('sources-tab').textContent = n > 0 ? `Sources (${n})` : 'Sources';
+            } catch(err) { console.warn('refreshSourcesBadge:', err); }
+        }
+
+        // ── Dialog ─────────────────────────────────────────────
+        function openDialog(title, body, onConfirm) {
+            document.getElementById('dialog-title').textContent = title;
+            document.getElementById('dialog-body').innerHTML = body;
+            pendingAction = onConfirm;
+            document.getElementById('dialog-confirm-btn').onclick = () => { closeDialog(); onConfirm(); };
+            document.getElementById('confirm-overlay').classList.add('show');
+        }
+
+        function closeDialog() {
+            document.getElementById('confirm-overlay').classList.remove('show');
+            pendingAction = null;
+        }
+
+        document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDialog();
+        });
+
+        function confirmDelete(key) {
+            openDialog(
+                'Remove source?',
+                `All chunks for <strong>${escapeHtml(key)}</strong> will be removed from the knowledge base. This cannot be undone.`,
+                () => deleteSource(key)
+            );
+        }
+
+        function confirmClearAll() {
+            openDialog(
+                'Clear all sources?',
+                'Every document and repository will be removed from the knowledge base. This cannot be undone.',
+                () => clearAllSources()
+            );
+        }
+
+        async function deleteSource(key) {
+            showToast(`Removing ${key}…`, 'loading');
+            try {
+                const res = await fetch(`${API_BASE}/sources/${encodeURIComponent(key)}`, { method: 'DELETE' });
+                if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Delete failed'); }
+                const data = await res.json();
+                showToast(`Removed ${data.chunks_removed} chunks`, 'success');
+                loadSources();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function clearAllSources() {
+            showToast('Clearing all sources…', 'loading');
+            try {
+                const res = await fetch(`${API_BASE}/sources`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Clear failed');
+                showToast('All sources cleared', 'success');
+                loadSources();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        // ── Ask ────────────────────────────────────────────────
+        async function askQuestion() {
+            const input = document.getElementById('question-input');
+            const sendBtn = document.getElementById('send-btn');
+            const chatBox = document.getElementById('chat-box');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.remove();
+
+            input.disabled = true;
+            sendBtn.disabled = true;
+            input.value = '';
+            input.style.height = 'auto';
+
+            const userRow = document.createElement('div');
+            userRow.className = 'message-row';
+            userRow.innerHTML = `<div class="msg-user"><div class="bubble">${escapeHtml(question)}</div></div>`;
+            chatBox.appendChild(userRow);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const aiRow = document.createElement('div');
+            aiRow.className = 'message-row';
+            aiRow.innerHTML = `
+                <div class="msg-ai">
+                    <div class="ai-avatar"><div class="ai-avatar-dot"></div></div>
+                    <div class="bubble" id="ai-bubble-active">
+                        <div class="loading-dots"><span></span><span></span><span></span></div>
+                    </div>
+                </div>`;
+            chatBox.appendChild(aiRow);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const bubble = document.getElementById('ai-bubble-active');
+            bubble.removeAttribute('id');
+
+            try {
+                const res = await fetch(`${API_BASE}/ask/stream?question=${encodeURIComponent(question)}`, { method: 'POST' });
+                if (!res.ok) throw new Error("API error");
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let fullAnswer = "";
+                let firstChunk = true;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    fullAnswer += decoder.decode(value, { stream: true });
+                    if (firstChunk) { bubble.innerHTML = ''; firstChunk = false; }
+                    bubble.classList.add('typing-cursor');
+                    bubble.textContent = fullAnswer;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+
+                bubble.classList.remove('typing-cursor');
+
+            } catch {
+                bubble.classList.remove('typing-cursor');
+                bubble.style.color = '#e08080';
+                bubble.style.fontFamily = "'DM Sans', sans-serif";
+                bubble.style.fontSize = '14px';
+                bubble.textContent = "Couldn't reach the API. Make sure your backend is running.";
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        // ── Utils ──────────────────────────────────────────────
+        function escapeHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function escapeAttr(str) {
+            return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // ── Init ───────────────────────────────────────────────
+        refreshSourcesBadge();
+    </script>
+</body>
+</html>
